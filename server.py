@@ -8,6 +8,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent
+WEB_DIST = ROOT / "web_dist"
 DB_PATH = ROOT / "trades.db"
 BINANCE = "https://fapi.binance.com"
 
@@ -356,8 +357,14 @@ class Handler(BaseHTTPRequestHandler):
             )
             return
 
-        # static files
-        file_path = ROOT / ("index.html" if path == "/" else path.lstrip("/"))
+        # static files (prefer React build output)
+        static_root = WEB_DIST if WEB_DIST.exists() else ROOT
+        file_path = static_root / ("index.html" if path == "/" else path.lstrip("/"))
+
+        # SPA fallback: if direct route and asset not found, return index.html
+        if not file_path.exists() and not Path(path).suffix:
+            file_path = static_root / "index.html"
+
         if file_path.exists() and file_path.is_file():
             ctype = "text/plain; charset=utf-8"
             if file_path.suffix == ".html":
